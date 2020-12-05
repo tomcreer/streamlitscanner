@@ -1,0 +1,42 @@
+LRBI - Bump intensity, large bump defects (offside)
+LLBI - Bump intensity, large bump defects (nearside)
+LV3 - 3m average longitudinal profile variance (nearside)*
+LV10 - 10m average longitudinal profile variance (nearside)*
+LL03 - 3m enhanced longitudinal profile variance (nearside)
+LL10 - 10m enhanced longitudinal profile variance (nearside)
+LR03 - 3m enhanced longitudinal profile variance (offside)
+LR10 - 10m enhanced longitudinal profile variance (offside)
+LCRV - Radius of curvature
+LFAL - Crossfall
+LGRD - Gradient
+LLRT - Left wheel rut depth
+LLRD - Nearside rut depth cleaned profile*
+LRRT - Right wheel rut depth
+LRRD - Offside rut depth cleaned profile*
+LTAD - Absolute deviation of transverse profile
+LLAD - deviation of nearside transverse profile (old)
+LRAD - deviation of offside transverse profile (old)
+LTRV - Transverse variance
+LEDR - Edge roughness
+LES1 - Road edge step off edge of carraigeway (20-50mm)
+LES2 - Road edge step off edge of carraigeway (>50mm)
+LEDC - Edge coverage
+LLTX - Left wheel average texture depth (algo 1)*
+LLTD - Left wheel average texture depth (algo 2)
+LLTM - Left wheel mean RMST Texture depth (multi line)
+LLTV - Left Wheel path variance (multi line)
+LCTM - Centre mean texture depth (multi line)
+LCTV - Centre texture variance (multi line)
+LRTM - Right wheel mean RMST Texture depth (multi line)
+LRTV - Right Wheel path variance (multi line)
+LT05 - Overall texture variability (5th percentile)
+LT95 - Overall texture variability (95th percentile)
+LTVV - Overall texture variability
+LCTX - Centre average texture depth (old)
+LRTX - Centre average texture depth (old)
+LTRC - Cracking (whole carriageway)*
+LWCL - Left wheel track cracking intensity
+LWCR - Right wheel track cracking intensity
+LRCR - Transverse/reflection cracking
+LSUR - Surface deterioration
+LOVD - Other visible defects
