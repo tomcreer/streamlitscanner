@@ -71,7 +71,7 @@ params = df.columns[7:49]
 with open('Scanner parameters.txt','r') as f:
     available_params = f.readlines()
     available_params = [x.strip() for x in available_params] 
-default_selected = [available_params[2],available_params[3],available_params[12],available_params[14],available_params[23],available_params[36]]
+default_selected = [available_params[3],available_params[4],available_params[13],available_params[15],available_params[24],available_params[35]]
 params_SELECTED = st.sidebar.multiselect('Select parameters', available_params, default=default_selected)#params)
 smoothing = st.sidebar.slider('Smoothing',0,20,(0))
 
