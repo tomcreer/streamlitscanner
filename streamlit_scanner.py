@@ -12,6 +12,7 @@ from streamlit_folium import folium_static
 import folium
 import geopandas as gpd
 import pandas as pd
+#import altair as alt
 
 from streamlit_folium import folium_static
 import folium
@@ -170,6 +171,7 @@ bands[5] = {'LV3':[7,17], 'LV10':[35,93], 'LTRC':[0.15, 2.0], 'LLTX':[0.6, 0.3],
 bands[6] = {'LV3':[8,20], 'LV10':[41,110], 'LTRC':[0.15, 2.0], 'LLTX':[0.6, 0.3], 'LLRD':[10, 20], 'LRRD':[10, 20], 'RCI':[40, 100]}
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker as plticker
 def plotsir(add_text, description):
   f, ax = plt.subplots(1,1,figsize=(12,4))
   #df3.plot(kind='line',x='cumlength',y='LV3',ax=ax)
@@ -192,6 +194,11 @@ def plotsir(add_text, description):
   #ax.set_ylabel('%')  # we already handled the x-label with ax1
   #ax2 = ax.twinx()
   color = 'tab:blue'
+  intervals = float(100)
+  loc = plticker.MultipleLocator(base=intervals)
+  ax.xaxis.set_minor_locator(loc)
+  ax.grid(which='minor', axis='x', linestyle='-', color='0.8')
+  ax.grid(which='major', axis='x', linestyle='-', color='0.7')
   #ax2.set_ylabel('Radius (m)', color=color)  # we already handled the x-label with ax1
   #ax2.set_yscale("log")
   #ax2.plot(t, R, alpha=0.4, color=color,label='Radius')
@@ -228,6 +235,11 @@ def plot_scrim_top():
   #ax.set_ylabel('%')  # we already handled the x-label with ax1
   #ax2 = ax.twinx()
   color = 'tab:blue'
+  intervals = float(100)
+  loc = plticker.MultipleLocator(base=intervals)
+  ax.xaxis.set_minor_locator(loc)
+  ax.grid(which='minor', axis='x', linestyle='-', color='0.8')
+  ax.grid(which='major', axis='x', linestyle='-', color='0.7')
   #ax2.set_ylabel('Radius (m)', color=color)  # we already handled the x-label with ax1
   #ax2.set_yscale("log")
   #ax2.plot(t, R, alpha=0.4, color=color,label='Radius')
@@ -243,38 +255,45 @@ def plot_scrim_top():
   st.sidebar.pyplot(f)
 
 def plot_scrim_bottom():
-  f, ax = plt.subplots(1,1,figsize=(12,4))
-  #df3.plot(kind='line',x='cumlength',y='LV3',ax=ax)
-  if smoothing:
-   ax.plot(df3_scrim['cumlength'], -df3_scrim['THRESHOLD1'].rolling(smoothing).mean(), color='b', label='Left lane SCRIM deficiency')
-   ax.plot(df4_scrim['cumlength'], -df4_scrim['THRESHOLD1'].rolling(smoothing).mean(), color='r', label='Right lane SCRIM deficiency')      
-  else:
-   ax.plot(df3_scrim['cumlength'], -df3_scrim['THRESHOLD1'], color='b', label='Left lane SCRIM deficiency')
-   ax.plot(df4_scrim['cumlength'], -df4_scrim['THRESHOLD1'], color='r', label='Right lane SCRIM deficiency')      
-
-
-  plt.axhline(y=0.0, color='#dbdbdb', linestyle='-')
-  plt.axhline(y=-0.1, color='#8a8a8a', linestyle='-')
-  plt.axhline(y=-0.2, color='#303030', linestyle='-')
+    f, ax = plt.subplots(1,1,figsize=(12,4))
+    #df3.plot(kind='line',x='cumlength',y='LV3',ax=ax)
+    if smoothing:
+     ax.plot(df3_scrim['cumlength'], -df3_scrim['THRESHOLD1'].rolling(smoothing).mean(), color='b', label='Left lane SCRIM deficiency')
+     ax.plot(df4_scrim['cumlength'], -df4_scrim['THRESHOLD1'].rolling(smoothing).mean(), color='r', label='Right lane SCRIM deficiency')      
+    else:
+     ax.plot(df3_scrim['cumlength'], -df3_scrim['THRESHOLD1'], color='b', label='Left lane SCRIM deficiency')
+     ax.plot(df4_scrim['cumlength'], -df4_scrim['THRESHOLD1'], color='r', label='Right lane SCRIM deficiency')      
   
-  ax.set_yscale('linear')
-  ax.set_xlabel('Chainage  (m) - SCRIM deficiencies')
-  #ax.set_ylabel('%')  # we already handled the x-label with ax1
-  #ax2 = ax.twinx()
-  color = 'tab:blue'
-  #ax2.set_ylabel('Radius (m)', color=color)  # we already handled the x-label with ax1
-  #ax2.set_yscale("log")
-  #ax2.plot(t, R, alpha=0.4, color=color,label='Radius')
-  #ax2.tick_params(axis='y', labelcolor=color)
+  
+    plt.axhline(y=0.0, color='#dbdbdb', linestyle='-')
+    plt.axhline(y=-0.1, color='#8a8a8a', linestyle='-')
+    plt.axhline(y=-0.2, color='#303030', linestyle='-')
+    
+    ax.set_yscale('linear')
+    ax.set_xlabel('Chainage  (m) - SCRIM deficiencies')
+    #ax.set_ylabel('%')  # we already handled the x-label with ax1
+    #ax2 = ax.twinx()
+    color = 'tab:blue'
+    
+    intervals = float(100)
+    loc = plticker.MultipleLocator(base=intervals)
+    ax.xaxis.set_minor_locator(loc)
+    ax.grid(which='minor', axis='x', linestyle='-', color='0.8')
+    ax.grid(which='major', axis='x', linestyle='-', color='0.7')
+    #ax2.set_ylabel('Radius (m)', color=color)  # we already handled the x-label with ax1
+    #ax2.set_yscale("log")
+    #ax2.plot(t, R, alpha=0.4, color=color,label='Radius')
+    #ax2.tick_params(axis='y', labelcolor=color)
+  
+    #ax.yaxis.set_tick_params(length=0)
+    #ax.xaxis.set_tick_params(length=0)
+    #ax.grid(b=True, which='major', c='w', lw=2, ls='-')
+    legend = ax.legend()
+    legend.get_frame().set_alpha(0.5)
+    for spine in ('top', 'right', 'bottom', 'left'):
+        ax.spines[spine].set_visible(False)
+    st.sidebar.pyplot(f)
 
-  #ax.yaxis.set_tick_params(length=0)
-  #ax.xaxis.set_tick_params(length=0)
-  #ax.grid(b=True, which='major', c='w', lw=2, ls='-')
-  legend = ax.legend()
-  legend.get_frame().set_alpha(0.5)
-  for spine in ('top', 'right', 'bottom', 'left'):
-      ax.spines[spine].set_visible(False)
-  st.sidebar.pyplot(f)
 
 if show_scrim:
   plot_scrim_top()
