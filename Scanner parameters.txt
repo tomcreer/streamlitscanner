@@ -1,3 +1,4 @@
+RCI - Road Condition Index (0 = best)
 LRBI - Bump intensity, large bump defects (offside)
 LLBI - Bump intensity, large bump defects (nearside)
 LV3 - 3m average longitudinal profile variance (nearside)*
@@ -32,8 +33,6 @@ LRTV - Right Wheel path variance (multi line)
 LT05 - Overall texture variability (5th percentile)
 LT95 - Overall texture variability (95th percentile)
 LTVV - Overall texture variability
-LCTX - Centre average texture depth (old)
-LRTX - Centre average texture depth (old)
 LTRC - Cracking (whole carriageway)*
 LWCL - Left wheel track cracking intensity
 LWCR - Right wheel track cracking intensity
