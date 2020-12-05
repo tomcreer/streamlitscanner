@@ -31,7 +31,7 @@ st.markdown(
 
 st.write(
      """
-#     SCANNER survey
+#     SCANNER condition survey results
 #     """
 )
 #with st.echo():
