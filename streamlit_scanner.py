@@ -63,15 +63,20 @@ y = st.sidebar.selectbox("Road:", df['roadcode'].unique(), index=42)
 show_scrim = st.sidebar.checkbox('SCRIM results?')
 
 df2 = df[df['roadcode']==y]
-selected_chainage = st.slider('Chainage in m', int(df2['cumlength'].min()), int(df2['cumlength'].max()),  \
+if y == 'A5':
+   selected_chainage = st.slider('Chainage in m', int(df2['cumlength'].min()), int(df2['cumlength'].max()),  \
                               value=(min(11670, max(0,int(df2['cumlength'].max()-1000))),min(17000, int(df2['cumlength'].max()-50))), step=10)
+else:
+   selected_chainage = st.slider('Chainage in m', int(df2['cumlength'].min()), int(df2['cumlength'].max()),  \
+                              value=(int(df2['cumlength'].min()), int(df2['cumlength'].max())), step=10)
+    
 st.write('Selected chainage:', selected_chainage)
 
 params = df.columns[7:49]
 with open('Scanner parameters.txt','r') as f:
     available_params = f.readlines()
     available_params = [x.strip() for x in available_params] 
-default_selected = [available_params[3],available_params[4],available_params[13],available_params[15],available_params[24],available_params[35]]
+default_selected = [available_params[3],available_params[4],available_params[13],available_params[15],available_params[24],available_params[35],available_params[35],available_params[39]]
 params_SELECTED = st.sidebar.multiselect('Select parameters', available_params, default=default_selected)#params)
 smoothing = st.sidebar.slider('Smoothing',0,20,(0))
 
@@ -104,29 +109,34 @@ mapa = folium.Map(location=new_coords, tiles="Cartodb Positron",
                   zoom_start=12, prefer_canvas=True)
 
 
-feature_group2 = folium.FeatureGroup(name='Gullies at recommended spacing', show=False)
-def plotDot(point):
-    '''input: series that contains a numeric named latitude and a numeric named longitude
-    this function creates a CircleMarker and adds it to your this_map'''
-    #folium.CircleMarker(location=[point.Y1, point.X1],
-    #                    radius=3,
-    #                    weight=1).add_to(mapa)
-    #folium.Marker([point['X1'], point['Y1']],
-    #      #Make color/style changes here
-    #      icon = folium.simple_marker(color='lightgray', marker_icon='oil'),
-    #      ).add_to(mapa)
-    color_map = {'CL1':'blue','CR1':'green'}
+# feature_group2 = folium.FeatureGroup(name='Gullies at recommended spacing', show=False)
+# def plotDot(point):
+#     '''input: series that contains a numeric named latitude and a numeric named longitude
+#     this function creates a CircleMarker and adds it to your this_map'''
+#     #folium.CircleMarker(location=[point.Y1, point.X1],
+#     #                    radius=3,
+#     #                    weight=1).add_to(mapa)
+#     #folium.Marker([point['X1'], point['Y1']],
+#     #      #Make color/style changes here
+#     #      icon = folium.simple_marker(color='lightgray', marker_icon='oil'),
+#     #      ).add_to(mapa)
+#     color_map = {'CL1':'blue','CR1':'green'}
     
-    folium.Circle( [point['X1'], point['Y1']], radius=2
-                     , color=color_map[point['SECTIONLABEL']]
-                     , fill_color='lightgray'
-                     , fill=True
-                     ).add_to(feature_group2)
-    
+#     folium.Circle( [point['X1'], point['Y1']], radius=2
+#                      , color=color_map[point['SECTIONLABEL']]
+#                      , fill_color='lightgray'
+#                      , fill=True
+#                      ).add_to(feature_group2)
+
+
+from branca.colormap import LinearColormap
+
+color_scale = {}
+color_scale = LinearColormap(['green','yellow','red',], index=[5,35,85])    
 feature_group5 = folium.FeatureGroup(name='Area of interest', show=True)
 def plotDot(point,color):
     folium.Circle( [point['X1'], point['Y1']], radius=2
-                     , color=color
+                     , color=color_scale(float(point['RCIexTex']))
                      , fill_color='black'
                      , fill=True
                      ).add_to(feature_group5)
@@ -176,8 +186,9 @@ def plotsir(add_text, description):
   f, ax = plt.subplots(1,1,figsize=(12,4))
   #df3.plot(kind='line',x='cumlength',y='LV3',ax=ax)
   if smoothing:
-   ax.plot(df3['cumlength'], df3[add_text].rolling(smoothing).mean(), color='b', label='Left lane')
-   ax.plot(df4['cumlength'], df4[add_text].rolling(smoothing).mean(), color='r', label='Right lane')
+    ax.plot(df3['cumlength'], df3[add_text].rolling(smoothing).mean(), color='b', label='Left lane')
+    ax.plot(df4['cumlength'], df4[add_text].rolling(smoothing).mean(), color='r', label='Right lane')
+
   else:
    ax.plot(df3['cumlength'], df3[add_text], color='b', label='Left lane')
    ax.plot(df4['cumlength'], df4[add_text], color='r', label='Right lane')      
@@ -191,6 +202,29 @@ def plotsir(add_text, description):
 
   ax.set_yscale('linear')
   ax.set_xlabel('Chainage  (m) - ' + add_text + ' : ' + description)
+  
+  if add_text in ['LSUR','RCIexTex']:
+      if df3[add_text].shape[0]:
+          if smoothing:
+              max1 = df3[add_text].rolling(smoothing).mean().max()
+          else:
+              max1 = df3[add_text].max()
+      else:
+          max1 = 0
+      if df4[add_text].shape[0]:
+          if smoothing:
+              max2 = df4[add_text].rolling(smoothing).mean().max()
+          else:
+              max2 = df4[add_text].max()
+      else:
+          max2 = 0
+      
+      if add_text == 'LSUR':
+          max3 = 3.5/(smoothing+1)
+      elif add_text == 'RCIexTex':
+          max3 = 100
+      ax.set_ylim([0, max(max1, max2, 100)])
+
   #ax.set_ylabel('%')  # we already handled the x-label with ax1
   #ax2 = ax.twinx()
   color = 'tab:blue'
@@ -299,9 +333,9 @@ if show_scrim:
   plot_scrim_top()
   plot_scrim_bottom()
 
-
+st.write(y + ' - ' + df2['Address 1'].mode()[0] )
 for param in params_SELECTED:
-    #st.write(param.split(' - ')[0])
+    
     plotsir(param.split(' - ')[0], param.split(' - ')[1])
 #while True:
 #    time.sleep(3)

@@ -39,3 +39,4 @@ LWCR - Right wheel track cracking intensity
 LRCR - Transverse/reflection cracking
 LSUR - Surface deterioration
 LOVD - Other visible defects
+RCIexTex - RCI without Texture
