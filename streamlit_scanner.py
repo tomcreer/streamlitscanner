@@ -223,7 +223,8 @@ def plotsir(add_text, description):
           max3 = 3.5/(smoothing+1)
       elif add_text == 'RCIexTex':
           max3 = 100
-      ax.set_ylim([0, max(max1, max2, 100)])
+          
+      ax.set_ylim([0, max(max1, max2, max3)])
 
   #ax.set_ylabel('%')  # we already handled the x-label with ax1
   #ax2 = ax.twinx()
