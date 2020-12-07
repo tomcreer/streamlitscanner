@@ -39,23 +39,23 @@ st.write(
 
 @st.cache
 def load_data():
-    #gdf_gullies = gpd.read_file('Gulleys Nov 2019/gulleys.shp')
-    #gdf_gullies.crs = "EPSG:27700"
-    #def transform_coords(X1,Y1):
-    #    return transformer.transform(X1, Y1)
+    gdf_acc = gpd.read_file('IOM_Accidents/IOM Accident Locations.shp')
+    gdf_acc.crs = "EPSG:27700"
+    def transform_coords(X1,Y1):
+        return transformer.transform(X1, Y1)
     
-    #gdf_gullies.loc[:,'X1'] = gdf_gullies.apply(lambda x: transform_coords(x['POINT_X'],x['POINT_Y'])[0], axis=1)
-    #gdf_gullies.loc[:,'Y1'] = gdf_gullies.apply(lambda x: transform_coords(x['POINT_X'],x['POINT_Y'])[1], axis=1)
+    gdf_acc.loc[:,'Y1'] = gdf_acc['Long']
+    gdf_acc.loc[:,'X1'] = gdf_acc['Lat']
     
     
     #gdf_gullies.head()
     df = pd.read_parquet('scannerdata.parquet')
     df_scrim = pd.read_parquet('scrim.parquet')
     #df = df.sort_values(['SECTIONLABEL','LABEL','STARTCH'])
-    return [df, df_scrim]
+    return [df, df_scrim, gdf_acc]
 
 
-df, df_scrim = load_data()
+df, df_scrim, gdf_acc = load_data()
 
 
 
@@ -72,6 +72,7 @@ else:
     
 st.write('Selected chainage:', selected_chainage)
 
+
 params = df.columns[7:49]
 with open('Scanner parameters.txt','r') as f:
     available_params = f.readlines()
@@ -80,7 +81,7 @@ default_selected = [available_params[3],available_params[4],available_params[13]
 params_SELECTED = st.sidebar.multiselect('Select parameters', available_params, default=default_selected)#params)
 smoothing = st.sidebar.slider('Smoothing',0,20,(0))
 
-
+map_param = st.selectbox("Parameter for map colours:", available_params + ['SCRIM - SCRIM deficiency'], index=41).split(' - ')[0]
 
 df3 = df2[(df2['SECTIONLABEL'] == 'CL1') & (df2['cumlength'] >= selected_chainage[0]) & (df2['cumlength'] <= selected_chainage[1])]
 df4 = df2[(df2['SECTIONLABEL'] == 'CR1') & (df2['cumlength'] >= selected_chainage[0]) & (df2['cumlength'] <= selected_chainage[1])]
@@ -88,8 +89,18 @@ df4 = df2[(df2['SECTIONLABEL'] == 'CR1') & (df2['cumlength'] >= selected_chainag
 df3_scrim = df_scrim[(df_scrim['roadcode'] == y) & (df_scrim['XSP'] == 'CL1') & (df_scrim['cumlength'] >= selected_chainage[0]) & (df_scrim['cumlength'] <= selected_chainage[1])]
 df4_scrim = df_scrim[(df_scrim['roadcode'] == y) & (df_scrim['XSP'] == 'CR1') & (df_scrim['cumlength'] >= selected_chainage[0]) & (df_scrim['cumlength'] <= selected_chainage[1])]
 
+if smoothing:
+    if map_param == 'SCRIM':
+      df3_scrim['smoothedmap'] = df3_scrim['THRESHOLD1'].rolling(smoothing).mean().fillna(0)
+      df4_scrim['smoothedmap'] = df4_scrim['THRESHOLD1'].rolling(smoothing).mean().fillna(0)
+    else:
+      df3['smoothedmap'] = df3[map_param].rolling(smoothing).mean().fillna(0)
+      df4['smoothedmap'] = df4[map_param].rolling(smoothing).mean().fillna(0)
+
+
 
 import folium
+from folium.features import DivIcon
 
 feature_group0 = folium.FeatureGroup(name='Left lane')
 feature_group1 = folium.FeatureGroup(name='Right lane')
@@ -127,17 +138,53 @@ mapa = folium.Map(location=new_coords, tiles="Cartodb Positron",
 #                      , fill_color='lightgray'
 #                      , fill=True
 #                      ).add_to(feature_group2)
+bands = {}
+
+bands[3] = {'LV3':[4,10], 'LV10':[21,56], 'LTRC':[0.15, 2.0], 'LLTX':[0.7, 0.4], 'LLRD':[10, 20], 'LRRD':[10, 20], 'RCI':[40, 100]}
+bands[4] = {'LV3':[5,13], 'LV10':[27,71], 'LTRC':[0.15, 2.0], 'LLTX':[0.6, 0.3], 'LLRD':[10, 20], 'LRRD':[10, 20], 'RCI':[40, 100]}
+bands[5] = {'LV3':[7,17], 'LV10':[35,93], 'LTRC':[0.15, 2.0], 'LLTX':[0.6, 0.3], 'LLRD':[10, 20], 'LRRD':[10, 20], 'RCI':[40, 100]}
+bands[6] = {'LV3':[8,20], 'LV10':[41,110], 'LTRC':[0.15, 2.0], 'LLTX':[0.6, 0.3], 'LLRD':[10, 20], 'LRRD':[10, 20], 'RCI':[40, 100]}
 
 
 from branca.colormap import LinearColormap
 
 color_scale = {}
-color_scale = LinearColormap(['green','yellow','red',], index=[5,35,85])    
+
+if hier in bands:  
+   if map_param in bands[hier]:
+       lim1 = bands[hier][map_param][0]
+       lim2 = bands[hier][map_param][1]
+       diff = lim2-lim1
+       color_scale = LinearColormap(['#91db9b','yellow','red',], index=[lim1-diff/2,lim1-diff/6,lim2-diff/6])       
+   elif map_param == 'SCRIM':
+       color_scale = LinearColormap(['#91db9b','yellow','red',], index=[0.05,-0.05,-0.2])            
+   else:
+       #df_tmp = df3[map_param].append(df4[map_param])
+       lim1 = df[df['Class']==hier][[map_param]].describe().iloc[4,0]
+       lim2 = df[df['Class']==hier][[map_param]].describe().iloc[[2,1],0].sum()*5/3
+       diff = lim2-lim1
+       color_scale = LinearColormap(['#91db9b','yellow','red',], index=[lim1,lim2-diff/2,lim2-diff/6])       
+       #st.write('limits are %s , %s , %s. %s %s' %( lim1,lim1+diff/6,lim2-diff/6, lim1, lim2))
+       
+#color_scale = LinearColormap(['green','yellow','red',], index=[5,35,85])    
 feature_group5 = folium.FeatureGroup(name='Area of interest', show=True)
 def plotDot(point,color):
-    folium.Circle( [point['X1'], point['Y1']], radius=2
-                     , color=color_scale(float(point['RCIexTex']))
-                     , fill_color='black'
+    size = 2
+    if smoothing:
+        to_plot = 'smoothedmap'
+    else:
+        if map_param == 'SCRIM':
+            to_plot = 'THRESHOLD1'
+            if float(point[to_plot]) > 0.09:
+                size = 8
+        else:
+            to_plot = map_param
+            
+
+        
+    folium.Circle( [point['X1'], point['Y1']], radius=size
+                     , color=color_scale(float(point[to_plot])) #'RCIexTex'
+                     #, fill_color='black'
                      , fill=True
                      ).add_to(feature_group5)
        
@@ -153,32 +200,71 @@ def plotChain(point):
                      , icon=folium.DivIcon(html=str("<p style='font-family:verdana;color:#444;font-size:10px;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%d</p>" % (point['cumlength'])))#, point['LABEL'], point['STARTCH'])))
                      #, popup=str(point['cumlength'])
                      ).add_to(feature_group4)
-    
+
+feature_group6 = folium.FeatureGroup(name='Accidents - wet/damp (blue)', show=False)
+feature_group7 = folium.FeatureGroup(name='Accidents - dry (brown)', show=False)
+feature_group8 = folium.FeatureGroup(name='Accidents - other (gray)', show=False)
+def plotAcc(point):
+    if point['Road_Surfa'] == 'Dry':
+        carcolor = 'brown'
+        fgroup = feature_group7
+    elif point['Road_Surfa'] == 'Wet/Damp':
+        carcolor = 'blue'
+        fgroup = feature_group6
+    else:
+        carcolor = 'gray'
+        fgroup = feature_group8
+        
+    if point['Overall_co'] == 'Fatal':
+        size = 11
+    elif point['Overall_co'] == 'Serious':
+        size = 9
+    elif point['Overall_co'] == 'Slight':
+        size = 7
+        
+        
+    folium.Marker( [point['X1'], point['Y1']], radius=4,
+        icon=DivIcon(
+        icon_size=(20,20),
+        #icon_anchor=(7,20),
+        html='<div style="font-size: %spt; font-weight: bold; color : %s">▣</div>' % (size, carcolor),
+        )
+        #icon=folium.Icon(
+        #icon_color=carcolor,
+        #icon='glyphicon-certificate',    # icon code from above link
+        #),#prefix='fa'),  # note fa prefix flag to use Font Awesome
+        ).add_to(fgroup)
+
 #use df.apply(,axis=1) to "iterate" through every row in your dataframe
 #df2[df2['gullymarker'] ==1].apply(lambda x: plotDot(x), axis = 1)
 
 df2.iloc[1::15].apply(lambda x: plotChain(x), axis = 1)
 
-df3.iloc[1::5].apply(lambda x: plotDot(x,'blue'), axis = 1)
-df4.iloc[1::5].apply(lambda x: plotDot(x, 'red'), axis = 1)
+spacing = int((df3.shape[0]+df4.shape[0])**(2/3)/200)+1
+
+if map_param == 'SCRIM':
+  df3_scrim.iloc[1::spacing].apply(lambda x: plotDot(x,'blue'), axis = 1)
+  df4_scrim.iloc[1::spacing].apply(lambda x: plotDot(x, 'red'), axis = 1)  
+else:
+  df3.iloc[1::spacing].apply(lambda x: plotDot(x,'blue'), axis = 1)
+  df4.iloc[1::spacing].apply(lambda x: plotDot(x, 'red'), axis = 1)
 #if df3.shape[0] > df4.shape[0]:
 #    df3.iloc[1::10].apply(lambda x: plotChain(x), axis = 1)
 #else:
 #    df4.iloc[1::10].apply(lambda x: plotChain(x), axis = 1)
 
 #gdf_gullies.apply(lambda x: plotGul(x), axis = 1)
+gdf_acc.apply(lambda x: plotAcc(x), axis = 1)
 
 #mapa.add_child(feature_group2)
 mapa.add_child(feature_group4)
 mapa.add_child(feature_group5)
+mapa.add_child(feature_group6)
+mapa.add_child(feature_group7)
+mapa.add_child(feature_group8)
 mapa.add_child(folium.map.LayerControl())
 folium_static(mapa)
 
-bands = {}
-bands[3] = {'LV3':[4,10], 'LV10':[21,56], 'LTRC':[0.15, 2.0], 'LLTX':[0.7, 0.4], 'LLRD':[10, 20], 'LRRD':[10, 20], 'RCI':[40, 100]}
-bands[4] = {'LV3':[5,13], 'LV10':[27,71], 'LTRC':[0.15, 2.0], 'LLTX':[0.6, 0.3], 'LLRD':[10, 20], 'LRRD':[10, 20], 'RCI':[40, 100]}
-bands[5] = {'LV3':[7,17], 'LV10':[35,93], 'LTRC':[0.15, 2.0], 'LLTX':[0.6, 0.3], 'LLRD':[10, 20], 'LRRD':[10, 20], 'RCI':[40, 100]}
-bands[6] = {'LV3':[8,20], 'LV10':[41,110], 'LTRC':[0.15, 2.0], 'LLTX':[0.6, 0.3], 'LLRD':[10, 20], 'LRRD':[10, 20], 'RCI':[40, 100]}
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as plticker
