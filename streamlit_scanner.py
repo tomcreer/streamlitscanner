@@ -243,8 +243,11 @@ df2.iloc[1::15].apply(lambda x: plotChain(x), axis = 1)
 spacing = int((df3.shape[0]+df4.shape[0])**(2/3)/200)+1
 
 if map_param == 'SCRIM':
-  df3_scrim.iloc[1::spacing].apply(lambda x: plotDot(x,'blue'), axis = 1)
-  df4_scrim.iloc[1::spacing].apply(lambda x: plotDot(x, 'red'), axis = 1)  
+  if smoothing:
+     df3_scrim.append(df4_scrim).sort_values(['smoothedmap']).iloc[1::spacing].apply(lambda x: plotDot(x,'blue'), axis = 1)      
+  else:
+     df3_scrim.append(df4_scrim).sort_values(['THRESHOLD1']).iloc[1::spacing].apply(lambda x: plotDot(x,'blue'), axis = 1)
+  #df4_scrim.iloc[1::spacing].apply(lambda x: plotDot(x, 'red'), axis = 1)  
 else:
   df3.iloc[1::spacing].apply(lambda x: plotDot(x,'blue'), axis = 1)
   df4.iloc[1::spacing].apply(lambda x: plotDot(x, 'red'), axis = 1)
