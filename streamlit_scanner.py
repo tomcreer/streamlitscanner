@@ -220,7 +220,8 @@ def plotsir(add_text, description):
           max2 = 0
       
       if add_text == 'LSUR':
-          max3 = 3.5/(smoothing+1)
+          max3 = 0.35#3.5/(smoothing+1)
+          plt.axhline(y=bands0.35, color='r', linestyle='-')
       elif add_text == 'RCIexTex':
           max3 = 100
           
