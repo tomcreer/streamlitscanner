@@ -155,9 +155,15 @@ if hier in bands:
        lim1 = bands[hier][map_param][0]
        lim2 = bands[hier][map_param][1]
        diff = lim2-lim1
-       color_scale = LinearColormap(['#91db9b','yellow','red',], index=[lim1-diff/2,lim1-diff/6,lim2-diff/6])       
+       if diff > 0:
+           color_scale = LinearColormap(['#91db9b','yellow','red',], index=[max(0,lim1-diff/2),max(0,lim1-min(lim1/2,diff/2)),lim2-diff/6])
+       else: #texture
+           color_scale = LinearColormap(['red','yellow','#91db9b',], index=[lim2+diff/6,lim1+diff/2,max(0,lim1-diff/2),])
+       
+       #st.write('limits are %s , %s , %s. %s %s' %(max(0,lim1-diff/2),lim1+diff/2,lim2+diff/6, lim1, lim2))
+
    elif map_param == 'SCRIM':
-       color_scale = LinearColormap(['#91db9b','yellow','red',], index=[0.05,-0.05,-0.2])            
+       color_scale = LinearColormap(['#91db9b','yellow','red'], index=[0.005,0.05,0.13])            
    else:
        #df_tmp = df3[map_param].append(df4[map_param])
        lim1 = df[df['Class']==hier][[map_param]].describe().iloc[4,0]
