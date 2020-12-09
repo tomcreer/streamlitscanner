@@ -172,7 +172,8 @@ if hier in bands:
        color_scale = LinearColormap(['#91db9b','yellow','red',], index=[lim1,lim2-diff/2,lim2-diff/6])       
        #st.write('limits are %s , %s , %s. %s %s' %( lim1,lim1+diff/6,lim2-diff/6, lim1, lim2))
        
-#color_scale = LinearColormap(['green','yellow','red',], index=[5,35,85])    
+
+
 feature_group5 = folium.FeatureGroup(name='Area of interest', show=True)
 def plotDot(point,color):
     size = 2
@@ -246,7 +247,7 @@ def plotAcc(point):
 
 df2.iloc[1::15].apply(lambda x: plotChain(x), axis = 1)
 
-spacing = int((df3.shape[0]+df4.shape[0])**(2/3)/200)+1
+spacing = min(int((df3.shape[0]+df4.shape[0])**(2/3)/200)+1,1)
 
 if map_param == 'SCRIM':
   if smoothing:
@@ -298,7 +299,7 @@ def plotsir(add_text, description):
   ax.set_yscale('linear')
   ax.set_xlabel('Chainage  (m) - ' + add_text + ' : ' + description)
   
-  if add_text in ['LSUR','RCIexTex']:
+  if add_text in ['LSUR','RCIexTex', 'LV3', 'LV10']:
       if df3[add_text].shape[0]:
           if smoothing:
               max1 = df3[add_text].rolling(smoothing).mean().max()
@@ -319,6 +320,24 @@ def plotsir(add_text, description):
           plt.axhline(y=0.35, color='r', linestyle='-')
       elif add_text == 'RCIexTex':
           max3 = 100
+          
+          
+      if add_text == 'LV3':
+         max1 = 0
+         max2 = 0
+         if smoothing:
+             max3 = min(30,df4[add_text].rolling(smoothing).mean().max())
+         else:
+             max3 = min(30, df4[add_text].max())
+             
+                      
+      if add_text == 'LV10':
+         max1 = 0
+         max2 = 0
+         if smoothing:
+             max3 = min(150,df4[add_text].rolling(smoothing).mean().max())
+         else:
+             max3 = min(150, df4[add_text].max())
           
       ax.set_ylim([0, max(max1, max2, max3)])
 
