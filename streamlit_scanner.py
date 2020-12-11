@@ -273,6 +273,10 @@ mapa.add_child(feature_group6)
 mapa.add_child(feature_group7)
 mapa.add_child(feature_group8)
 mapa.add_child(folium.map.LayerControl())
+
+from folium.plugins import LocateControl
+LocateControl().add_to(mapa)
+
 folium_static(mapa)
 
 
