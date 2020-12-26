@@ -58,19 +58,38 @@ def load_data():
 df, df_scrim, gdf_acc = load_data()
 
 
+roads = list(df['roadcode'].unique())
+hier_select = st.sidebar.selectbox('Hierarchy:',['',3,4,5,6])
 
-y = st.sidebar.selectbox("Road:", df['roadcode'].unique(), index=42)
-show_scrim = st.sidebar.checkbox('SCRIM results?')
-
-df2 = df[df['roadcode']==y]
-if y == 'A5':
-   selected_chainage = st.slider('Chainage in m', int(df2['cumlength'].min()), int(df2['cumlength'].max()),  \
-                              value=(min(11670, max(0,int(df2['cumlength'].max()-1000))),min(17000, int(df2['cumlength'].max()-50))), step=10)
+if hier_select == '':
+    default = ['A5']
 else:
-   selected_chainage = st.slider('Chainage in m', int(df2['cumlength'].min()), int(df2['cumlength'].max()),  \
+    default = list(df[df['Class']==hier_select]['roadcode'].unique())
+
+
+yy = st.sidebar.multiselect("Road:", roads, default=default)
+
+
+if not yy:
+    show_scrim = st.sidebar.checkbox('SCRIM results?')
+    y = 'A5'
+    df2 = df[df['roadcode']==y]
+    selected_chainage = st.slider('Chainage in m', int(df2['cumlength'].min()), int(df2['cumlength'].max()),  \
+                              value=(min(11670, max(0,int(df2['cumlength'].max()-1000))),min(17000, int(df2['cumlength'].max()-50))), step=10)
+
+else:
+    y = yy[0]
+    df2 = df[df['roadcode']==y]
+    if len(yy) == 1:
+      show_scrim = st.sidebar.checkbox('SCRIM results?')
+      selected_chainage = st.slider('Chainage in m', int(df2['cumlength'].min()), int(df2['cumlength'].max()),  \
                               value=(int(df2['cumlength'].min()), int(df2['cumlength'].max())), step=10)
+      st.write('Selected chainage:', selected_chainage)
+    else:
+      selected_chainage = (0,50000)
     
-st.write('Selected chainage:', selected_chainage)
+    
+
 
 
 params = df.columns[7:49]
@@ -78,7 +97,8 @@ with open('Scanner parameters.txt','r') as f:
     available_params = f.readlines()
     available_params = [x.strip() for x in available_params] 
 default_selected = [available_params[3],available_params[4],available_params[13],available_params[15],available_params[24],available_params[35],available_params[39]]
-params_SELECTED = st.sidebar.multiselect('Select parameters', available_params, default=default_selected)#params)
+if len(yy) <= 1:
+    params_SELECTED = st.sidebar.multiselect('Select parameters', available_params, default=default_selected)#params)
 smoothing = st.sidebar.slider('Smoothing',0,20,(0))
 
 map_param = st.selectbox("Parameter for map colours:", available_params + ['SCRIM - SCRIM deficiency'], index=41).split(' - ')[0]
@@ -245,19 +265,58 @@ def plotAcc(point):
 #use df.apply(,axis=1) to "iterate" through every row in your dataframe
 #df2[df2['gullymarker'] ==1].apply(lambda x: plotDot(x), axis = 1)
 
-df2.iloc[1::15].apply(lambda x: plotChain(x), axis = 1)
+yx = yy
+if yx == None:
+    yx = ['A5']
+#for road in yx:
+if 1:
+    if len(yx) == 1:
+        df2.iloc[1::15].apply(lambda x: plotChain(x), axis = 1)
+    else:
+        if hier_select == '':
+            df2 = df[df['roadcode'].isin(yx)]
+            df3_scrim = df_scrim[(df_scrim['roadcode'].isin(yx)) & (df_scrim['XSP'] == 'CL1') & (df_scrim['cumlength'] >= selected_chainage[0]) & (df_scrim['cumlength'] <= selected_chainage[1])]
+            df4_scrim = df_scrim[(df_scrim['roadcode'].isin(yx)) & (df_scrim['XSP'] == 'CR1') & (df_scrim['cumlength'] >= selected_chainage[0]) & (df_scrim['cumlength'] <= selected_chainage[1])]
+               
+        else:
+            df2 = df[(df['roadcode'].isin(yx)) & (df['Class'] == hier_select)]
+            df3_scrim = df_scrim[(df_scrim['roadcode'].isin(yx)) & (df_scrim['Class'] == hier_select) & (df_scrim['XSP'] == 'CL1') & (df_scrim['cumlength'] >= selected_chainage[0]) & (df_scrim['cumlength'] <= selected_chainage[1])]
+            df4_scrim = df_scrim[(df_scrim['roadcode'].isin(yx)) & (df_scrim['Class'] == hier_select) & (df_scrim['XSP'] == 'CR1') & (df_scrim['cumlength'] >= selected_chainage[0]) & (df_scrim['cumlength'] <= selected_chainage[1])]
+        
+        
+        
+        
+        df3 = df2[(df2['SECTIONLABEL'] == 'CL1') & (df2['cumlength'] >= selected_chainage[0]) & (df2['cumlength'] <= selected_chainage[1])]
+        df4 = df2[(df2['SECTIONLABEL'] == 'CR1') & (df2['cumlength'] >= selected_chainage[0]) & (df2['cumlength'] <= selected_chainage[1])]
+        
 
-spacing = min(int((df3.shape[0]+df4.shape[0])**(2/3)/200)+1,1)
+        if smoothing:
+            if map_param == 'SCRIM':
+              df3_scrim['smoothedmap'] = df3_scrim['THRESHOLD1'].rolling(smoothing).mean().fillna(0)
+              df4_scrim['smoothedmap'] = df4_scrim['THRESHOLD1'].rolling(smoothing).mean().fillna(0)
+            else:
+              df3['smoothedmap'] = df3[map_param].rolling(smoothing).mean().fillna(0)
+              df4['smoothedmap'] = df4[map_param].rolling(smoothing).mean().fillna(0)
+        
+        
+    
+    
 
-if map_param == 'SCRIM':
-  if smoothing:
-     df3_scrim.append(df4_scrim).sort_values(['smoothedmap']).iloc[1::spacing].apply(lambda x: plotDot(x,'blue'), axis = 1)      
-  else:
-     df3_scrim.append(df4_scrim).sort_values(['THRESHOLD1']).iloc[1::spacing].apply(lambda x: plotDot(x,'blue'), axis = 1)
-  #df4_scrim.iloc[1::spacing].apply(lambda x: plotDot(x, 'red'), axis = 1)  
-else:
-  df3.iloc[1::spacing].apply(lambda x: plotDot(x,'blue'), axis = 1)
-  df4.iloc[1::spacing].apply(lambda x: plotDot(x, 'red'), axis = 1)
+    
+    spacing = min(int((df3.shape[0]+df4.shape[0])**(2/3)/200)+1,1)
+    
+    if map_param == 'SCRIM':
+      if smoothing:
+         df3_scrim.append(df4_scrim).sort_values(['smoothedmap']).iloc[1::spacing].apply(lambda x: plotDot(x,'blue'), axis = 1)      
+      else:
+         df3_scrim.append(df4_scrim).sort_values(['THRESHOLD1']).iloc[1::spacing].apply(lambda x: plotDot(x,'blue'), axis = 1)
+      #df4_scrim.iloc[1::spacing].apply(lambda x: plotDot(x, 'red'), axis = 1)  
+    else:
+      df3.iloc[1::spacing].apply(lambda x: plotDot(x,'blue'), axis = 1)
+      df4.iloc[1::spacing].apply(lambda x: plotDot(x, 'red'), axis = 1)
+  
+  
+  
 #if df3.shape[0] > df4.shape[0]:
 #    df3.iloc[1::10].apply(lambda x: plotChain(x), axis = 1)
 #else:
@@ -449,14 +508,16 @@ def plot_scrim_bottom():
     st.sidebar.pyplot(f)
 
 
-if show_scrim:
-  plot_scrim_top()
-  plot_scrim_bottom()
 
-st.write(y + ' - ' + df2['Address 1'].mode()[0] )
-for param in params_SELECTED:
+if len(yy) <= 1:
+    if show_scrim:
+      plot_scrim_top()
+      plot_scrim_bottom()
     
-    plotsir(param.split(' - ')[0], param.split(' - ')[1])
+    st.write(y + ' - ' + df2['Address 1'].mode()[0] )
+    for param in params_SELECTED:
+        
+        plotsir(param.split(' - ')[0], param.split(' - ')[1])
 #while True:
 #    time.sleep(3)
 #    bounds = mapa.get_bounds()
