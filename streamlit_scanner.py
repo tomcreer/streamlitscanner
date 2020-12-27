@@ -186,8 +186,12 @@ if hier in bands:
        color_scale = LinearColormap(['#91db9b','yellow','red'], index=[0.005,0.05,0.13])            
    else:
        #df_tmp = df3[map_param].append(df4[map_param])
-       lim1 = df[df['Class']==hier][[map_param]].describe().iloc[4,0]
-       lim2 = df[df['Class']==hier][[map_param]].describe().iloc[[2,1],0].sum()*5/3
+       if smoothing:
+        lim1 = df[df['Class']==hier][[map_param]].rolling(smoothing).mean().fillna(0).describe().iloc[4,0]
+        lim2 = df[df['Class']==hier][[map_param]].rolling(smoothing).mean().fillna(0).describe().iloc[[2,1],0].sum()*5/3
+       else:
+        lim1 = df[df['Class']==hier][[map_param]].describe().iloc[4,0]
+        lim2 = df[df['Class']==hier][[map_param]].describe().iloc[[2,1],0].sum()*5/3
        diff = lim2-lim1
        color_scale = LinearColormap(['#91db9b','yellow','red',], index=[lim1,lim2-diff/2,lim2-diff/6])       
        #st.write('limits are %s , %s , %s. %s %s' %( lim1,lim1+diff/6,lim2-diff/6, lim1, lim2))
@@ -292,11 +296,11 @@ if 1:
 
         if smoothing:
             if map_param == 'SCRIM':
-              df3_scrim['smoothedmap'] = df3_scrim['THRESHOLD1'].rolling(smoothing).mean().fillna(0)
-              df4_scrim['smoothedmap'] = df4_scrim['THRESHOLD1'].rolling(smoothing).mean().fillna(0)
+              df3_scrim['smoothedmap'] = df3_scrim.groupby(['roadcode'])['THRESHOLD1'].rolling(smoothing).mean().reset_index(0,drop=True).fillna(0)
+              df4_scrim['smoothedmap'] = df4_scrim.groupby(['roadcode'])['THRESHOLD1'].rolling(smoothing).mean().reset_index(0,drop=True).fillna(0)
             else:
-              df3['smoothedmap'] = df3[map_param].rolling(smoothing).mean().fillna(0)
-              df4['smoothedmap'] = df4[map_param].rolling(smoothing).mean().fillna(0)
+              df3['smoothedmap'] = df3.groupby(['roadcode'])[map_param].rolling(smoothing).mean().reset_index(0,drop=True).fillna(0)
+              df4['smoothedmap'] = df4.groupby(['roadcode'])[map_param].rolling(smoothing).mean().reset_index(0,drop=True).fillna(0)
         
         
     
