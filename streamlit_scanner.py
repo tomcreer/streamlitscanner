@@ -59,7 +59,11 @@ df, df_scrim, gdf_acc = load_data()
 
 
 roads = list(df['roadcode'].unique())
-hier_select = st.sidebar.selectbox('Hierarchy:',['',3,4,5,6])
+
+hier_map = {'':'','Primary':3,'District':4,'Local':5,'Access':6}
+hier_selectbox = st.sidebar.selectbox('Hierarchy:',['','Primary','District','Local','Access'])
+
+hier_select = hier_map[hier_selectbox]
 
 if hier_select == '':
     default = ['A5']
