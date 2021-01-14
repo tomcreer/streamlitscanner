@@ -37,7 +37,7 @@ st.write(
 )
 #with st.echo():
 
-@st.cache
+@st.cache(allow_output_mutation=True)
 def load_data():
     gdf_acc = gpd.read_file('IOM_Accidents/IOM Accident Locations.shp')
     gdf_acc.crs = "EPSG:27700"
@@ -50,25 +50,78 @@ def load_data():
     
     #gdf_gullies.head()
     df = pd.read_parquet('scannerdata.parquet')
+
     df_scrim = pd.read_parquet('scrim.parquet')
     #df = df.sort_values(['SECTIONLABEL','LABEL','STARTCH'])
-    return [df, df_scrim, gdf_acc]
+    
+    #gdf = gpd.GeoDataFrame(
+    #df, geometry=gpd.points_from_xy(df.Y1, df.X1))
+    #gdf.crs = {'init':'epsg:4326'}   
+    
+    gdf_towns = gpd.read_file('Douglas Area.json')
+    gdf_towns.crs = {'init':'epsg:3857'}   
+    
+    return [df, df_scrim, gdf_acc, gdf_towns]
 
 
-df, df_scrim, gdf_acc = load_data()
+df, df_scrim, gdf_acc, gdf_towns = load_data()
 
 
 roads = list(df['roadcode'].unique())
 
-hier_map = {'':'','Primary':3,'District':4,'Local':5,'Access':6}
-hier_selectbox = st.sidebar.selectbox('Hierarchy:',['','Primary','District','Local','Access'])
+hier_map = {'':'','Primary':3,'District':4,'Local':5,'Access':6, 'Douglas area':0}
+hier_selectbox = st.sidebar.selectbox('Hierarchy:',['','Primary','District','Local','Access', 'Douglas area'])
 
 hier_select = hier_map[hier_selectbox]
 
 if hier_select == '':
     default = ['A5']
 else:
-    default = list(df[df['Class']==hier_select]['roadcode'].unique())
+    if hier_select == 0: #Douglas area
+        default = ['A1', 'A11', 'A18', 'A2', 'A21', 'A22', 'A23', 'A24', 'A25', 'A33',
+       'A35', 'A38', 'A39', 'A41', 'A42', 'A43', 'A44', 'A45', 'A46',
+       'A47', 'A5', 'A6', 'A8', 'B27', 'B31', 'B34', 'B48', 'B54', 'B55',
+       'B56', 'B57', 'B61', 'B62', 'B63', 'B64', 'B65', 'B66', 'B67',
+       'B68', 'B69', 'B71', 'B74', 'B75', 'B76', 'B77', 'B80', 'B82',
+       'B99900495', 'B99908487', 'C1', 'C10', 'C1025', 'C1026', 'C1062',
+       'C1065', 'C1066', 'C1067', 'C1079', 'C1100', 'C1109', 'C112',
+       'C1134', 'C1136', 'C1138', 'C1139', 'C1146', 'C1161', 'C1163',
+       'C1167', 'C1168', 'C1170', 'C1171', 'C119', 'C1214', 'C1236',
+       'C124', 'C1248', 'C126', 'C1281', 'C1356', 'C1358', 'C1366',
+       'C1369', 'C1389', 'C1394', 'C1396', 'C1404', 'C1423', 'C1430',
+       'C1443', 'C1445', 'C1451', 'C1452', 'C1453', 'C1455', 'C1467',
+       'C1468', 'C1473', 'C1475', 'C1477', 'C1478', 'C1484', 'C1489',
+       'C1491', 'C1503', 'C1513', 'C1529', 'C1539', 'C1545', 'C1546',
+       'C1547', 'C1549', 'C1553', 'C156', 'C158', 'C1600', 'C1602',
+       'C164', 'C174', 'C1789', 'C179', 'C1837', 'C1841', 'C1842', 'C2',
+       'C22', 'C431', 'C444', 'C448', 'C453', 'C456', 'C460', 'C463',
+       'C465', 'C602', 'C605', 'C606', 'C609', 'C612', 'C613', 'C615',
+       'C616', 'C617', 'C618', 'C619', 'C620', 'C621', 'C623', 'C624',
+       'C625', 'C628', 'C63', 'C632', 'C634', 'C636', 'C637', 'C638',
+       'C639', 'C64', 'C641', 'C643', 'C645', 'C647', 'C649', 'C65',
+       'C652', 'C656', 'C657', 'C659', 'C666', 'C668', 'C669', 'C67',
+       'C672', 'C675', 'C680', 'C683', 'C684', 'C685', 'C686', 'C688',
+       'C69', 'C690', 'C693', 'C694', 'C695', 'C697', 'C698', 'C699',
+       'C70', 'C701', 'C702', 'C703', 'C704', 'C706', 'C707', 'C708',
+       'C714', 'C715', 'C720', 'C721', 'C722', 'C724', 'C729', 'C730',
+       'C732', 'C733', 'C734', 'C737', 'C739', 'C740', 'C742', 'C743',
+       'C745', 'C746', 'C747', 'C748', 'C751', 'C756', 'C757', 'C758',
+       'C759', 'C761', 'C765', 'C766', 'C768', 'C769', 'C77', 'C771',
+       'C774', 'C777', 'C78', 'C785', 'C80', 'C83', 'C87', 'C88', 'C89',
+       'C90', 'C92', 'C96', 'C99902261', 'C99905296', 'C99905307',
+       'C99909011', 'E105', 'E159', 'X99904173', 'X99905154', 'X99905255',
+       'X99905913', 'X99909041', 'X99909042', 'X99909047', 'X99909091',
+       'C1056', 'C1059', 'C1068', 'C1101', 'C1108', 'C1143', 'C1144',
+       'C1153', 'C1156', 'C1158', 'C1159', 'C1160', 'C1169', 'C1235',
+       'C1415', 'C1428', 'C1469', 'C1485', 'C1488', 'C1544', 'C1548',
+       'C1554', 'C601', 'C610', 'C630', 'C631', 'C642', 'C644', 'C646',
+       'C651', 'C658', 'C66', 'C660', 'C661', 'C662', 'C671', 'C673',
+       'C678', 'C68', 'C689', 'C696', 'C705', 'C716', 'C718', 'C719',
+       'C723', 'C725', 'C727', 'C728', 'C741', 'C750', 'C753', 'C754',
+       'C76', 'C763', 'C764', 'C767', 'C773', 'C775', 'C776', 'C79',
+       'C97', 'C99900572', 'E182', 'E213', 'X99905215']
+    else:
+        default = list(df[df['Class']==hier_select]['roadcode'].unique())
 
 
 yy = st.sidebar.multiselect("Road:", roads, default=default)
@@ -283,9 +336,28 @@ if 1:
     else:
         if hier_select == '':
             df2 = df[df['roadcode'].isin(yx)]
+            
             df3_scrim = df_scrim[(df_scrim['roadcode'].isin(yx)) & (df_scrim['XSP'] == 'CL1') & (df_scrim['cumlength'] >= selected_chainage[0]) & (df_scrim['cumlength'] <= selected_chainage[1])]
             df4_scrim = df_scrim[(df_scrim['roadcode'].isin(yx)) & (df_scrim['XSP'] == 'CR1') & (df_scrim['cumlength'] >= selected_chainage[0]) & (df_scrim['cumlength'] <= selected_chainage[1])]
                
+        elif hier_select == 0:
+            
+            gdf = gpd.GeoDataFrame(
+            df, geometry=gpd.points_from_xy(df.Y1, df.X1))
+            
+            gdf_towns2 = gdf_towns.to_crs(epsg='4326')
+            
+            df2 = gpd.sjoin(gdf, gdf_towns2, op='intersects', how='inner')
+            
+            #df2 = df[(df['roadcode'].isin(yx))]
+            
+            if map_param == 'SCRIM':
+                gdf_scrim = gpd.GeoDataFrame(
+                    df_scrim, geometry=gpd.points_from_xy(df_scrim.Y1, df_scrim.X1))
+                df2_scrim = gpd.sjoin(gdf_scrim, gdf_towns2, op='intersects', how='inner')
+                df3_scrim = df2_scrim[(df_scrim['XSP'] == 'CL1') ]
+                df4_scrim = df2_scrim[(df_scrim['XSP'] == 'CR1') ]
+                   
         else:
             df2 = df[(df['roadcode'].isin(yx)) & (df['Class'] == hier_select)]
             df3_scrim = df_scrim[(df_scrim['roadcode'].isin(yx)) & (df_scrim['Class'] == hier_select) & (df_scrim['XSP'] == 'CL1') & (df_scrim['cumlength'] >= selected_chainage[0]) & (df_scrim['cumlength'] <= selected_chainage[1])]
