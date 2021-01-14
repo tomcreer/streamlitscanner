@@ -59,7 +59,7 @@ def load_data():
     #gdf.crs = {'init':'epsg:4326'}   
     
     gdf_towns = gpd.read_file('Douglas Area.json')
-    gdf_towns.crs = {'init':'epsg:3857'}   
+    gdf_towns.crs = 'EPSG:3857'   
     
     return [df, df_scrim, gdf_acc, gdf_towns]
 
