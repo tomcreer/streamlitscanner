@@ -12,6 +12,7 @@ from streamlit_folium import folium_static
 import folium
 import geopandas as gpd
 import pandas as pd
+import numpy as np
 #import altair as alt
 
 from streamlit_folium import folium_static
@@ -37,7 +38,7 @@ st.write(
 )
 #with st.echo():
 
-@st.cache(allow_output_mutation=True)
+@st.cache(allow_output_mutation=True, ttl=3600)
 def load_data():
     gdf_acc = gpd.read_file('IOM_Accidents/IOM Accident Locations.shp')
     gdf_acc.crs = "EPSG:27700"
@@ -126,6 +127,10 @@ else:
 
 yy = st.sidebar.multiselect("Road:", roads, default=default)
 
+#np.sqrt
+df['SD1'] = (df['LTRC']/df['LTRC'].max())*4 - (df['LSUR']/df['LSUR'].max()) 
+df['SD2'] = np.sqrt(df['LTRC']/df['LTRC'].max())
+df['SD3'] = (df['LTRC']/df['LTRC'].max())
 
 if not yy:
     show_scrim = st.sidebar.checkbox('SCRIM results?')
@@ -153,6 +158,9 @@ params = df.columns[7:49]
 with open('Scanner parameters.txt','r') as f:
     available_params = f.readlines()
     available_params = [x.strip() for x in available_params] 
+    available_params.append('SD1 - cracking less surf defects')
+    available_params.append('SD2 - cracking sqrt')
+    available_params.append('SD3 - cracking')
 default_selected = [available_params[3],available_params[4],available_params[13],available_params[15],available_params[24],available_params[35],available_params[39]]
 if len(yy) <= 1:
     params_SELECTED = st.sidebar.multiselect('Select parameters', available_params, default=default_selected)#params)
@@ -217,10 +225,10 @@ mapa = folium.Map(location=new_coords, tiles="Cartodb Positron",
 #                      ).add_to(feature_group2)
 bands = {}
 
-bands[3] = {'LV3':[4,10], 'LV10':[21,56], 'LTRC':[0.15, 2.0], 'LLTX':[0.7, 0.4], 'LLRD':[10, 20], 'LRRD':[10, 20], 'RCI':[40, 100]}
-bands[4] = {'LV3':[5,13], 'LV10':[27,71], 'LTRC':[0.15, 2.0], 'LLTX':[0.6, 0.3], 'LLRD':[10, 20], 'LRRD':[10, 20], 'RCI':[40, 100]}
-bands[5] = {'LV3':[7,17], 'LV10':[35,93], 'LTRC':[0.15, 2.0], 'LLTX':[0.6, 0.3], 'LLRD':[10, 20], 'LRRD':[10, 20], 'RCI':[40, 100]}
-bands[6] = {'LV3':[8,20], 'LV10':[41,110], 'LTRC':[0.15, 2.0], 'LLTX':[0.6, 0.3], 'LLRD':[10, 20], 'LRRD':[10, 20], 'RCI':[40, 100]}
+bands[3] = {'LV3':[4,10], 'LV10':[21,56], 'LLTX':[0.7, 0.4], 'LLRD':[10, 20], 'LRRD':[10, 20], 'RCI':[40, 100]}#, 'LTRC':[0.15, 2.0]}
+bands[4] = {'LV3':[5,13], 'LV10':[27,71], 'LLTX':[0.6, 0.3], 'LLRD':[10, 20], 'LRRD':[10, 20], 'RCI':[40, 100]}#, 'LTRC':[0.15, 2.0]}
+bands[5] = {'LV3':[7,17], 'LV10':[35,93], 'LLTX':[0.6, 0.3], 'LLRD':[10, 20], 'LRRD':[10, 20], 'RCI':[40, 100]}#, 'LTRC':[0.15, 2.0]}
+bands[6] = {'LV3':[8,20], 'LV10':[41,110],'LLTX':[0.6, 0.3], 'LLRD':[10, 20], 'LRRD':[10, 20], 'RCI':[40, 100]}#, 'LTRC':[0.15, 2.0]}
 
 
 from branca.colormap import LinearColormap
