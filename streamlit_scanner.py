@@ -52,6 +52,18 @@ def load_data():
     #gdf_gullies.head()
     df = pd.read_parquet('scannerdata.parquet')
 
+    from pyproj import Proj, transform
+
+
+    #def reproj(row):
+    #  transformer = Transformer.from_crs("epsg:4326", "epsg:3857")
+    #  x2,y2 = transformer.transform(row['X1'],row['Y1'])
+    #  
+    #  row['X1'] = x2
+    #  row['Y1'] = y2
+
+    #df = df.apply(lambda x: reproj(x), axis=1)
+
     df_scrim = pd.read_parquet('scrim.parquet')
     #df = df.sort_values(['SECTIONLABEL','LABEL','STARTCH'])
     
@@ -70,8 +82,8 @@ df, df_scrim, gdf_acc, gdf_towns = load_data()
 
 roads = list(df['roadcode'].unique())
 
-hier_map = {'':'','Primary':3,'District':4,'Local':5,'Access':6, 'Douglas area':0}
-hier_selectbox = st.sidebar.selectbox('Hierarchy:',['','Primary','District','Local','Access', 'Douglas area'])
+hier_map = {'':'','Primary':3,'District':4,'Local':5,'Access':6, 'Douglas area':0, 'All Roads':7}
+hier_selectbox = st.sidebar.selectbox('Hierarchy:',['','Primary','District','Local','Access', 'Douglas area', 'All Roads'])
 
 hier_select = hier_map[hier_selectbox]
 
@@ -121,6 +133,8 @@ else:
        'C723', 'C725', 'C727', 'C728', 'C741', 'C750', 'C753', 'C754',
        'C76', 'C763', 'C764', 'C767', 'C773', 'C775', 'C776', 'C79',
        'C97', 'C99900572', 'E182', 'E213', 'X99905215']
+    elif hier_select == 7: #all roads
+        default = roads
     else:
         default = list(df[df['Class']==hier_select]['roadcode'].unique())
 
@@ -197,11 +211,17 @@ elif df4.shape[0]:
     new_coords = [(df4.X1.min()+df4.X1.max())/2, (df4.Y1.min()+df4.Y1.max())/2]
     hier = df4['Class'].iloc[0]
 
+
+
+transformer27 = Transformer.from_crs("epsg:4326", "epsg:3857")
+
+new_coords = transformer.transform(new_coords[0],new_coords[1])
+
 #new_coords = transformer.transform((coords[0]+coords[2])/2,  (coords[1]+coords[3])/2)
 #def transform_coords(X1,Y1):
 #    return transformer.transform(X1, Y1)
 
-mapa = folium.Map(location=new_coords, tiles="Cartodb Positron",
+mapa = folium.Map(location=new_coords, tiles="Cartodb Positron", #tiles='https://manngis.gov.im/LocalViewWeb/ArcGIS/Rest/Services/6e0ea2cc-77ed-4fdd-aa1f-80be2daa7d7e/MapServer/tile/{z}/{y}/{x}',attr="MANNGIS IoM Gov",
                   zoom_start=12, prefer_canvas=True)
 
 
@@ -263,6 +283,7 @@ if hier in bands:
        
 
 
+
 feature_group5 = folium.FeatureGroup(name='Area of interest', show=True)
 def plotDot(point,color):
     size = 2
@@ -277,8 +298,8 @@ def plotDot(point,color):
             to_plot = map_param
             
 
-        
-    folium.Circle( [point['X1'], point['Y1']], radius=size
+    x2,y2 = transformer27.transform(point['X1'],point['Y1'])    
+    folium.Circle( [x2, y2], radius=size
                      , color=color_scale(float(point[to_plot])) #'RCIexTex'
                      #, fill_color='black'
                      , fill=True
@@ -289,7 +310,9 @@ feature_group4 = folium.FeatureGroup(name='Chainages', show=True)
 def plotChain(point):
     #iframe = folium.IFrame(text, width=700, height=450)
     #popup = folium.Popup(iframe, max_width=3000)
-    folium.Marker( [point['X1'], point['Y1']], radius=4
+    
+    x2,y2 = transformer27.transform(point['X1'],point['Y1'])    
+    folium.Marker( [x2, y2], radius=4
                      , color='black'
                      #, fill_color='#808080'
                      #, fill=True
@@ -606,6 +629,16 @@ if len(yy) <= 1:
     for param in params_SELECTED:
         
         plotsir(param.split(' - ')[0], param.split(' - ')[1])
+        
+        
+if st.button('save all'):
+    df['smoothed'] = df.groupby(['roadcode','SECTIONLABEL'])[map_param].transform(lambda x: x.rolling(smoothing).mean().fillna(0))
+    #df4['smoothedmap'] = df4[map_param].rolling(smoothing).mean()
+    gdf = gpd.GeoDataFrame(
+        df, geometry=gpd.points_from_xy(df.Y1, df.X1))
+    gdf.to_file('save_%s_smooth-%s.shp' % (map_param, smoothing))
+    #df_scrim
+                   
 #while True:
 #    time.sleep(3)
 #    bounds = mapa.get_bounds()
