@@ -5,7 +5,7 @@ pyproj==2.6.1.post1
 geopandas==0.7.0
 geopy==2.0.0
 xlrd==1.2.0
-streamlit==1.1.0
+streamlit==0.69.1
 streamlit-folium==0.1.0
 numpy==1.18.1
 scipy==1.4.1
